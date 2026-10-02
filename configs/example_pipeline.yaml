@@ -1,0 +1,123 @@
+run:
+  name: example_momia_filter_unet
+  output_dir: ../output/example_momia_filter_unet
+  mode: local
+  dry_run: false
+  seed: 0
+  log_level: INFO
+  # If false (default), batches/ momia/ and unet/cell_crops_*/ are removed once
+  # the final stage completes; only final/ (CSVs and passed_crops) is kept.
+  keep_intermediate: true
+
+inputs:
+  image_dir: /path/to/your/image/directory
+  pattern: "*Phase*.tif"
+  recursive: false
+  phase_channel: Phase
+  channels: [Phase]
+  pixel_microns: 0.10317
+  channel_axis: auto
+
+# Pixel-unit parameters below (including rod_filter.json area bounds) describe
+# this reference calibration. They scale automatically to inputs.pixel_microns.
+# Omit this block or use null to preserve legacy input-pixel behavior.
+# Do not also manually scale the parameters. Use a new output_dir after changes.
+spatial_calibration:
+  reference_pixel_microns: 0.10317
+
+batching:
+  n_batches: 8
+  overwrite_links: true
+
+momia:
+  enabled: true
+  workers_per_batch: 1
+  force: false
+  skip_existing: true
+  settings:
+    segmentation:
+      method: sauvola
+      window_size: 9
+      k: 0.05
+      min_particle_size: 50
+      min_hole_size: 50
+      dark_foreground: true
+    filtering:
+      exclude_edge: true
+      edge_distance: 8
+      area_min: 50
+      area_max: 1500
+      eccentricity_min: 0.0
+      eccentricity_max: 1.0
+      solidity_min: 0.0
+      solidity_max: 1.0
+      length_min:
+      length_max:
+      width_min:
+      width_max:
+      aspect_ratio_min:
+      aspect_ratio_max:
+    outputs:
+      write_preview: true
+      write_cell_table: true
+      write_summary_csv: true
+
+filter:
+  enabled: true
+  config_path: rod_filter.json
+  require_momia_included: true
+
+unet:
+  enabled: false
+  model_path:
+  padmap:
+  crop_size: 96  # reference pixels; minimum field width = 9.90432 µm
+  min_bbox_pad: 4  # reference pixels; per-side bbox padding = 0.41268 µm
+  edge_pad_mode: reflect
+  crop_workers: 4
+  shards: 1
+  probability_threshold: 0.5
+  keep_class: cell
+  save:
+    crops: true
+    composites: false
+    passed_crops: false
+    include_available_channels: true
+    masks: [Phase, Mask]
+
+slurm:
+  submit: false
+  partition: preempt
+  time: "08:00:00"
+  mem: 16g
+  cpus_per_task: 4
+  job_prefix: segv2
+  # log_dir defaults to <repo>/logs (e.g. ./logs/segv2_batch1_momia-12345.out)
+  log_dir:
+
+export:
+  prefix: sc_morph
+  include_unet_probabilities: true
+  # Channels the extractor will look for next to each Phase TIFF.
+  # - Empty list or [auto] → auto-detect sibling channels from the image
+  #   directory. Every detected non-Phase channel gets the common
+  #   intensity/profile/fluorescence-common feature set; channels whose
+  #   names contain "AF405" or "Bod493" additionally get HADA / puncta
+  #   features via the plugin registry in channels.py.
+  # - Pin an explicit list (e.g. [Phase, AF405, Bod493]) to lock the
+  #   schema across runs. Missing channel files become NaN columns.
+  extract_channels: [auto]
+  workers: 1
+  # Leave fluorescence empty to use FluorescenceConfig defaults; set keys to
+  # override (e.g. shell_erosion_radius, puncta_threshold_rel, ...).
+  fluorescence: {}
+  # Empty list → derive feature columns from the resolved channel set.
+  # Provide an explicit list to project a custom schema.
+  feature_columns: []
+
+# Optional Slack-compatible webhook. POSTs `{"text": "..."}` on:
+#   - run completion (final stage success)
+#   - stage failure (Python exception in any --stage invocation)
+#   - resubmit-time detection of OOM-killed / interrupted batches from the prior run
+notifications:
+  webhook_url:

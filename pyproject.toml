@@ -1,0 +1,63 @@
+[project]
+name = "deciphaer-image-segmentation"
+version = "0.1.0"
+description = "Config-driven Slurm/local MOMIA2 segmentation, rod-shape filtering, TB U-Net cell classification, and deciphaer-format feature extraction."
+requires-python = ">=3.11"
+dependencies = [
+    "imagecodecs>=2024.8",
+    "loguru>=0.7",
+    "matplotlib>=3.8",
+    "nd2reader>=3.3",
+    "numpy>=1.26",
+    "opencv-python>=4.9",
+    "pandas>=2.1",
+    "pillow>=10.0",
+    "polars>=1.40.1",
+    "pyarrow>=24.0.0",
+    "pytest>=9.0.3",
+    "pyyaml>=6.0",
+    "read-roi>=1.6",
+    "scikit-image>=0.24",
+    "scikit-learn>=1.4",
+    "scipy>=1.11",
+    "seaborn>=0.13",
+    "tifffile>=2024.8",
+    "torch>=2.2",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+deciphaer-segment = "deciphaer_image_segmentation.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "src/deciphaer_image_segmentation",
+    "src/deciphaer_processing",
+    "src/fluorescence",
+    "src/momia2",
+    "src/momia_seg",
+    "src/tb_unet",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+# Pin torch to the CUDA 12.8 wheel index. The cluster's NVIDIA driver supports up
+# to CUDA 12.9 (driver reports CUDA driver version 12090), so the default cu130
+# torch wheel from PyPI fails to initialize CUDA at runtime and silently falls
+# back to CPU.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

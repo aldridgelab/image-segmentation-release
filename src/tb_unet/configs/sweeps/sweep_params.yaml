@@ -1,0 +1,95 @@
+# TB U-Net Hyperparameter Sweep Configuration
+# ==============================================
+# Generates nested per-experiment configs consumable by `python -m tb_unet.train`.
+# Use with:
+#   python tb_unet/scripts/generate_sweep_config.py --template tb_unet/configs/sweeps/sweep_params.yaml --method grid
+#
+# Grid search combinations: 3 × 2 × 3 × 2 × 3 × 2 × 2 = 216 runs
+
+run_name: "unet_sweep_v1"
+group_name: "unet_hyperparameter_sweep"
+
+data:
+  data_dir: "session_output"
+  image_dir: "data/images"
+
+output:
+  output_dir: "tb_unet/checkpoints/sweeps"
+
+logging:
+  wandb_project: "tb-unet"
+  wandb_enabled: true
+
+augmentations:
+  train_strategy: "baseline"
+  val_strategy: "none"
+  test_strategy: "none"
+  train:
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+    random_rotate_90: 0.5
+  val: {}
+  test: {}
+
+# ==============================================================================
+# SWEPT PARAMETERS - use nested keys (dot notation)
+# ==============================================================================
+parameters:
+  data.channels:
+    - [0]
+    - [0, 1]
+    - [0, 1, 2]
+
+  model.use_attention:
+    - false
+    - true
+
+  model.base_channels:
+    - 32
+    - 64
+    - 96
+
+  model.depth:
+    - 3
+    - 4
+
+  training.lr:
+    - 0.0005
+    - 0.001
+    - 0.002
+
+  loss.focal_gamma:
+    - 1.5
+    - 2.0
+
+  loss.loss_type:
+    - "combined"
+    - "focal_dice"
+
+# ==============================================================================
+# FIXED PARAMETERS - constant across all runs
+# ==============================================================================
+fixed:
+  data.pad_multiple: 32
+
+  model.num_classes: 3
+  model.bilinear: false
+
+  training.batch_size: 16
+  training.num_workers: 4
+  training.epochs: 100
+  training.weight_decay: 0.0001
+  training.scheduler: "cosine"
+  training.scheduler_patience: 10
+  training.scheduler_factor: 0.5
+  training.early_stopping_patience: 20
+  training.mixed_precision: true
+  training.gradient_clip: 1.0
+
+  loss.ce_weight: 1.0
+  loss.dice_weight: 1.0
+  loss.class_weights: null
+  loss.class_weight_method: "effective_num"
+
+  output.save_every: 10
+  output.log_every: 10

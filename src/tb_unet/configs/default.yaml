@@ -1,0 +1,64 @@
+# TB U-Net Default Training Configuration
+# Phase-only baseline model
+
+data:
+  data_dir: "session_output"
+  image_dir: "data/images"
+  channels: [0]  # Phase only (index 0)
+  pad_multiple: 32
+
+model:
+  in_channels: null  # inferred from len(data.channels)
+  num_classes: 3
+  base_channels: 64
+  depth: 4
+  use_attention: false
+  bilinear: false
+
+training:
+  batch_size: 16
+  num_workers: 4
+  epochs: 100
+  lr: 0.001
+  weight_decay: 0.0001
+  scheduler: "cosine"
+  scheduler_patience: 10
+  scheduler_factor: 0.5
+  early_stopping_patience: 20
+  mixed_precision: true
+  gradient_clip: 1.0
+
+loss:
+  loss_type: "combined"
+  ce_weight: 1.0
+  dice_weight: 1.0
+  focal_gamma: 2.0
+  class_weights: null
+  class_weight_method: "inverse_sqrt_freq"
+
+output:
+  output_dir: "tb_unet/checkpoints"
+  experiment_name: "phase_only_v1"
+  save_every: 10
+  log_every: 10
+
+logging:
+  wandb_enabled: false
+  wandb_project: "tb-unet"
+  wandb_entity: null
+  wandb_tags:
+    - "phase-only"
+    - "baseline"
+
+augmentations:
+  train_strategy: "baseline"
+  val_strategy: "none"
+  test_strategy: "none"
+  train:
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+    random_rotate_90: 0.5
+  val: {}
+  test: {}
+
+run_id: null
