@@ -40,6 +40,12 @@ aldridge-image-segmentation-release/
 
 ## Quickstart
 
+`uv` selects PyTorch automatically by operating system: Linux uses the CUDA 12.8
+wheel index, while macOS uses native wheels from PyPI. The same commands and
+lockfile work on both platforms. CUDA acceleration requires a compatible NVIDIA
+GPU and driver; the pipeline otherwise defaults to CPU inference. This selects
+packages by platform, not by detecting the GPU during installation.
+
 ```bash
 # Environment setup (uv recommended; pip install -e . also works)
 uv sync --extra dev

@@ -50,12 +50,10 @@ packages = [
 testpaths = ["tests"]
 pythonpath = ["src"]
 
-# Pin torch to the CUDA 12.8 wheel index. The cluster's NVIDIA driver supports up
-# to CUDA 12.9 (driver reports CUDA driver version 12090), so the default cu130
-# torch wheel from PyPI fails to initialize CUDA at runtime and silently falls
-# back to CPU.
+# Use CUDA 12.8 wheels on Linux for compatibility with the cluster driver.
+# Other platforms (including macOS) use native PyTorch wheels from PyPI.
 [tool.uv.sources]
-torch = [{ index = "pytorch-cu128" }]
+torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'linux'" }]
 
 [[tool.uv.index]]
 name = "pytorch-cu128"
