@@ -45,7 +45,7 @@ def write_run_metadata(
         "segmentation_run_hash": run_hash or "",
         "input_paths": input_paths,
         "config": _redact(config_snapshot),
-        "git_commit": _git_commit(output_dir),
+        "git_commit": _git_commit(),
         "python_version": sys.version,
         "platform": platform.platform(),
         "packages": _package_versions(["numpy", "pandas", "PyYAML", "tifffile"]),
@@ -68,11 +68,21 @@ def _package_versions(names: list[str]) -> dict[str, str]:
     return versions
 
 
-def _git_commit(cwd: Path) -> str:
+def _git_commit() -> str:
+    checkout_root = Path(__file__).resolve().parents[2]
     try:
+        repo_root = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=checkout_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        if Path(repo_root.stdout.strip()).resolve() != checkout_root:
+            return "unknown"
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            cwd=cwd,
+            cwd=checkout_root,
             check=True,
             capture_output=True,
             text=True,

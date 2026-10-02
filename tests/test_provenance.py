@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import random
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -84,5 +85,40 @@ def test_seed_everything_logs_when_torch_seeding_fails(monkeypatch) -> None:
     seed_everything(1)
 
 
-def test_git_commit_returns_unknown_outside_repo(tmp_path: Path) -> None:
-    assert provenance._git_commit(tmp_path) in {"unknown"}  # no .git here
+def test_write_run_metadata_uses_software_checkout_not_output_repo(tmp_path: Path) -> None:
+    output_dir = tmp_path / "unrelated-repo"
+    output_dir.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=output_dir, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=output_dir, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=output_dir, check=True)
+    (output_dir / "unrelated.txt").write_text("unrelated", encoding="utf-8")
+    subprocess.run(["git", "add", "unrelated.txt"], cwd=output_dir, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "initial"], cwd=output_dir, check=True)
+
+    checkout_root = Path(provenance.__file__).resolve().parents[2]
+    expected_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=checkout_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    path = write_run_metadata(
+        output_dir=output_dir,
+        config_snapshot={},
+        input_paths=[],
+        seed=1,
+        artifacts={},
+    )
+
+    assert json.loads(path.read_text(encoding="utf-8"))["git_commit"] == expected_commit
+
+
+def test_git_commit_returns_unknown_when_package_has_no_checkout(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(
+        provenance,
+        "__file__",
+        str(tmp_path / "site-packages" / "deciphaer_image_segmentation" / "provenance.py"),
+    )
+
+    assert provenance._git_commit() == "unknown"
