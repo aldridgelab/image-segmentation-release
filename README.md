@@ -1,6 +1,6 @@
 # aldridge lab image segmentation - public release
 
-this repo's focus it to turn phase-contrast microscopy TIFFs into per-cell morphology and fluorescence features. The pipeline uses MOMIA2 for segmentation, with optional rule-based filtering and U-Net classification, and writes tables in a format that allows for simple analysis.
+this repo's focus is to turn phase-contrast microscopy TIFFs into per-cell morphology and fluorescence features. the pipeline uses MOMIA2 for segmentation, with optional rule-based filtering and U-Net classification, and writes tables in a format that allows for simple analysis.
 
 the pipeline code is included under `src/`. download the U-Net checkpoint separately if desired.
 
